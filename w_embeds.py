@@ -47,8 +47,8 @@ def get_model(filename, training_text, vector_size=100, window=5, min_count=1, s
 model_sg = get_model("skipgram_model.model", processed_text, sg=1)
 model_cbow = get_model("cbow_model.model", processed_text)
 
-vocab = model_sg.wv.index_to_key
-print("Vocab of our trained models:\n", vocab)
+# vocab = model_sg.wv.index_to_key
+# print("Vocab of our trained models:\n", vocab)
 
 # Other pre-trained models
 # Loading GloVe file
@@ -58,12 +58,78 @@ pretrained_glove = api.load("glove-wiki-gigaword-100")
 wv_demo = api.load("word2vec-google-news-300")  # loads from gensim downloader
 
 
-# First Query
-# print("Skip-gram results for 'female':")
-# print(model_sg.wv.most_similar("female", topn=10))
-# print("CBOW results for 'female':")
-# print(model_cbow.wv.most_similar("female", topn=10))
-# print("GloVe results for 'female':")
-# print(pretrained_glove.most_similar("female", topn=10))
-# print("Word2Vec Demo results for 'female':")
-# print(wv_demo.most_similar("female", topn=10))
+# First Query - "female"
+print("Skip-gram results for 'female':")
+print(model_sg.wv.most_similar("female", topn=10))
+print("CBOW results for 'female':")
+print(model_cbow.wv.most_similar("female", topn=10))
+print("GloVe results for 'female':")
+print(pretrained_glove.most_similar("female", topn=10))
+print("Word2Vec Demo results for 'female':")
+print(wv_demo.most_similar("female", topn=10))
+
+# Second Query - "united - america + england"
+print("Skip-gram results for 'united - america + england':")
+print(
+    model_sg.wv.most_similar(
+        positive=["united", "england"], negative=["america"], topn=10
+    )
+)
+
+print("CBOW results for 'united - america + england':")
+print(
+    model_cbow.wv.most_similar(
+        positive=["united", "england"], negative=["america"], topn=10
+    )
+)
+
+print("GloVe results for 'united - america + england':")
+print(
+    pretrained_glove.most_similar(
+        positive=["united", "england"], negative=["america"], topn=10
+    )
+)
+
+print("Word2Vec Demo results for 'united - america + england':")
+print(
+    wv_demo.most_similar(positive=["united", "england"], negative=["america"], topn=10)
+)
+
+# Third Query - "day"
+print("Skip-gram results for 'day':")
+print(model_sg.wv.most_similar("day", topn=10))
+print("CBOW results for 'day':")
+print(model_cbow.wv.most_similar("day", topn=10))
+print("GloVe results for 'day':")
+print(pretrained_glove.most_similar("day", topn=10))
+print("Word2Vec Demo results for 'day':")
+print(wv_demo.most_similar("day", topn=10))
+
+# Fourth Query - "world - war + peace"
+print("Skip-gram results for 'world - war + peace':")
+print(model_sg.wv.most_similar(positive=["world", "peace"], negative=["war"], topn=10))
+
+print("CBOW results for 'world - war + peace':")
+print(
+    model_cbow.wv.most_similar(positive=["world", "peace"], negative=["war"], topn=10)
+)
+
+print("GloVe results for 'world - war + peace':")
+print(
+    pretrained_glove.most_similar(
+        positive=["world", "peace"], negative=["war"], topn=10
+    )
+)
+
+print("Word2Vec Demo results for 'world - war + peace':")
+print(wv_demo.most_similar(positive=["world", "peace"], negative=["war"], topn=10))
+
+# Fifth Query - "year"
+print("Skip-gram results for 'year':")
+print(model_sg.wv.most_similar("year", topn=10))
+print("CBOW results for 'year':")
+print(model_cbow.wv.most_similar("year", topn=10))
+print("GloVe results for 'year':")
+print(pretrained_glove.most_similar("year", topn=10))
+print("Word2Vec Demo results for 'year':")
+print(wv_demo.most_similar("year", topn=10))
