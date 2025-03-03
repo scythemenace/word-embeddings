@@ -1,6 +1,7 @@
 from datasets import load_dataset
+from gensim import models
 from normalize_text_module import normalize_text
-from gensim.models import KeyedVectors, Word2Vec
+from gensim.models import Word2Vec
 from gensim.scripts.glove2word2vec import glove2word2vec
 import os
 import gensim.downloader as api
@@ -46,42 +47,23 @@ def get_model(filename, training_text, vector_size=100, window=5, min_count=1, s
 model_sg = get_model("skipgram_model.model", processed_text, sg=1)
 model_cbow = get_model("cbow_model.model", processed_text)
 
+vocab = model_sg.wv.index_to_key
+print("Vocab of our trained models:\n", vocab)
+
 # Other pre-trained models
-
 # Loading GloVe file
-path = "./glove.6B/glove.6B.100d.txt"  # Checks if the glove file already exists in the system
-if not os.path.exists(path):
-    raise Exception("Glove file doesn't exist at the specified path in the code.")
-glove_file = os.path.basename(path)  # File exists
-print(f"Found glove file: {glove_file}")
-
-output_file = (
-    "glove.6B.100d.word2vec"  # The filename which will be stored as word2vec format
-)
-if not os.path.exists(output_file):
-    print(f"Converting {os.path.basename(path)} to Word2Vec format...")
-    glove2word2vec(
-        glove_file, output_file
-    )  # converts it into word2vec format and stores it
-    pretrained_glove = KeyedVectors.load_word2vec_format(
-        output_file, binary=False
-    )  # loads the model
-
-else:
-    print(f"Loading existing {os.path.basename(output_file)}...")
-    pretrained_glove = KeyedVectors.load_word2vec_format(
-        output_file, binary=False
-    )  # loads the model since it already exists
+pretrained_glove = api.load("glove-wiki-gigaword-100")
 
 # Loading Word2Vec demo embeddings - Google News dataset
-wv = api.load("word2vec-google-news-100")  # loads from gensim downloader
+wv_demo = api.load("word2vec-google-news-300")  # loads from gensim downloader
 
 
-# The documentation said word2vec dataset has a drawback which doesn't infer vectors for unfamiliar words
-# Created a function which checks if the word exists, otherwise raises an error
-def get_key_from_w2v_demo(key):
-    try:
-        vector = wv[key]
-        return vector
-    except KeyError:
-        print(f"The word {key} doesn't appear in this model")
+# First Query
+# print("Skip-gram results for 'female':")
+# print(model_sg.wv.most_similar("female", topn=10))
+# print("CBOW results for 'female':")
+# print(model_cbow.wv.most_similar("female", topn=10))
+# print("GloVe results for 'female':")
+# print(pretrained_glove.most_similar("female", topn=10))
+# print("Word2Vec Demo results for 'female':")
+# print(wv_demo.most_similar("female", topn=10))
