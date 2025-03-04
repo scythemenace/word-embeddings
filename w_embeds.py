@@ -166,14 +166,14 @@ conflict_terms_sg = filter_terms(conflict_terms, model_sg.wv)
 
 # Check and filter for CBOW model
 print("CBOW model:")
-male_terms_cbow = filter_terms(past_terms, model_cbow.wv)
-female_terms_cbow = filter_terms(future_terms, model_cbow.wv)
-career_terms_cbow = filter_terms(celebration_terms, model_cbow.wv)
-family_terms_cbow = filter_terms(conflict_terms, model_cbow.wv)
+past_terms_cbow = filter_terms(past_terms, model_cbow.wv)
+future_terms_cbow = filter_terms(future_terms, model_cbow.wv)
+celebration_terms_cbow = filter_terms(celebration_terms, model_cbow.wv)
+conflict_terms_cbow = filter_terms(conflict_terms, model_cbow.wv)
 
 
 target_sets = ["past_terms", "future_terms"]
-attribute_sets = ["career_terms", "family_terms"]
+attribute_sets = ["celebration_terms", "conflict_terms"]
 
 # Create a query for each model
 sg_query = Query(
@@ -184,8 +184,8 @@ sg_query = Query(
 )
 
 cbow_query = Query(
-    [male_terms_cbow, female_terms_cbow],
-    [career_terms_cbow, family_terms_cbow],
+    [past_terms_cbow, future_terms_cbow],
+    [celebration_terms_cbow, conflict_terms_cbow],
     target_sets,
     attribute_sets,
 )
@@ -232,10 +232,10 @@ else:
 print("\nCBOW Model:")
 if all(
     [
-        len(male_terms_cbow) > 0,
-        len(female_terms_cbow) > 0,
-        len(career_terms_cbow) > 0,
-        len(family_terms_cbow) > 0,
+        len(past_terms_cbow) > 0,
+        len(future_terms_cbow) > 0,
+        len(celebration_terms_cbow) > 0,
+        len(conflict_terms_cbow) > 0,
     ]
 ):
     wefe_result = weat_metric.run_query(cbow_query, wefe_cbow)
