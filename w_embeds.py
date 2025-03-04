@@ -1,24 +1,29 @@
 from datasets import load_dataset
 from gensim import models
+from normalize_text_sentence_module import normalize_text_sentence
 from normalize_text_module import normalize_text
 from gensim.models import Word2Vec
 import os
 import gensim.downloader as api
 from wefe.metrics import WEAT
 from wefe.query import Query
-from wefe.utils import run_queries
 from wefe.word_embedding_model import WordEmbeddingModel
+from sklearn.datasets import fetch_20newsgroups
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score, f1_score
+import numpy as np
 
 dataset = load_dataset("wikipedia", "20220301.simple")  # Loading the dataset
 
 raw_text = dataset["train"][0]["text"]  # Extracting the dataset
 
 # Processing the dataset using the normalize_text function from previous assignments
-processed_text = normalize_text(raw_text, lowercase=True)
+processed_text = normalize_text_sentence(raw_text, remove_stopwords=True, lowercase=True, remove_punctuation=True)
 
 
 # Checks if a pre-trained model already exists and loads it, otherwise trains one from scratch and saves it
-def get_model(filename, training_text, vector_size=100, window=5, min_count=1, sg=0):
+def get_model(filename, training_text, vector_size=100, window=10, min_count=1, sg=0):
     # Checks if the file exists
     if os.path.exists(filename):
         print(f"Loading existing module from {filename}...")
@@ -246,3 +251,50 @@ print(wefe_result)
 print("\nWord2Vec Google News Model:")
 wefe_result = weat_metric.run_query(original_query, wefe_w2v)
 print(wefe_result)
+
+
+# Load a text classification dataset (20 Newsgroups subset)
+categories = ['alt.atheism', 'soc.religion.christian']
+newsgroups_train = fetch_20newsgroups(subset='train', categories=categories, remove=('headers', 'footers', 'quotes'))
+newsgroups_test = fetch_20newsgroups(subset='test', categories=categories, remove=('headers', 'footers', 'quotes'))
+
+# Normalize and preprocess text
+X_train = [" ".join(normalize_text(text, lowercase=True)) for text in newsgroups_train.data]
+X_test = [" ".join(normalize_text(text, lowercase=True)) for text in newsgroups_test.data]
+y_train = newsgroups_train.target
+y_test = newsgroups_test.target
+
+# 1. Bag-of-Words Model
+bow_vectorizer = TfidfVectorizer(max_features=5000)
+X_train_bow = bow_vectorizer.fit_transform(X_train)
+X_test_bow = bow_vectorizer.transform(X_test)
+
+# Train and evaluate BoW model
+bow_model = LogisticRegression(max_iter=1000)
+bow_model.fit(X_train_bow, y_train)
+bow_pred = bow_model.predict(X_test_bow)
+
+bow_acc = accuracy_score(y_test, bow_pred)
+bow_f1 = f1_score(y_test, bow_pred)
+print(f"Bag-of-Words Results - Accuracy: {bow_acc:.4f}, F1: {bow_f1:.4f}")
+
+# 2. Averaged Word Embeddings Model (Using pretrained GloVe)
+def document_to_vector(text, model):
+    words = text.split()
+    vectors = [model[word] for word in words if word in model.key_to_index]
+    return np.mean(vectors, axis=0) if vectors else np.zeros(model.vector_size)
+
+X_train_emb = np.array([document_to_vector(text, pretrained_glove) for text in X_train])
+X_test_emb = np.array([document_to_vector(text, pretrained_glove) for text in X_test])
+
+# Train and evaluate embeddings model
+emb_model = LogisticRegression(max_iter=1000)
+emb_model.fit(X_train_emb, y_train)
+emb_pred = emb_model.predict(X_test_emb)
+
+emb_acc = accuracy_score(y_test, emb_pred)
+emb_f1 = f1_score(y_test, emb_pred)
+print(f"Embedding Results - Accuracy: {emb_acc:.4f}, F1: {emb_f1:.4f}")
+
+# Feature dimension comparison
+print(f"\nFeature Dimensions:\nBoW: {X_train_bow.shape[1]}\nEmbeddings: {pretrained_glove.vector_size}")
