@@ -2,22 +2,19 @@ from datasets import load_dataset
 from gensim import models
 from normalize_text_module import normalize_text
 from gensim.models import Word2Vec
-from gensim.scripts.glove2word2vec import glove2word2vec
 import os
 import gensim.downloader as api
+from wefe.metrics import WEAT
+from wefe.query import Query
+from wefe.utils import run_queries
+from wefe.word_embedding_model import WordEmbeddingModel
 
 dataset = load_dataset("wikipedia", "20220301.simple")  # Loading the dataset
 
 raw_text = dataset["train"][0]["text"]  # Extracting the dataset
 
 # Processing the dataset using the normalize_text function from previous assignments
-processed_text = normalize_text(
-    raw_text,
-    lemmatize=True,
-    lowercase=True,
-    remove_stopwords=True,
-    remove_punctuation=True,
-)
+processed_text = normalize_text(raw_text, lowercase=True)
 
 
 # Checks if a pre-trained model already exists and loads it, otherwise trains one from scratch and saves it
@@ -133,3 +130,119 @@ print("GloVe results for 'year':")
 print(pretrained_glove.most_similar("year", topn=10))
 print("Word2Vec Demo results for 'year':")
 print(wv_demo.most_similar("year", topn=10))
+
+# Conducting WEAT test similar to examples provided in the assignment
+
+# First concept pair: Time periods (Past vs. Future)
+past_terms = ["history", "old", "previous", "ancient", "traditional"]
+future_terms = ["new", "become", "change", "create", "development"]
+
+# Second concept pair: Celebration vs. Conflict
+celebration_terms = ["festival", "celebrate", "holiday", "birthday", "party"]
+conflict_terms = ["war", "force", "battle", "fight", "conflict"]
+
+# Check vocabulary coverage
+print("\nChecking vocabulary coverage...")
+all_weat_terms = past_terms + future_terms + celebration_terms + conflict_terms
+
+
+# Filter terms based on vocabulary presence because otherwise we're getting warnings that the word doesn't exist in our model's vocab
+def filter_terms(terms, model):
+    filtered = [term for term in terms if term in model.key_to_index]
+    return filtered
+
+
+# Check and filter for Skip-gram model
+print("Skip-gram model:")
+past_terms_sg = filter_terms(past_terms, model_sg.wv)
+future_terms_sg = filter_terms(future_terms, model_sg.wv)
+celebration_terms_sg = filter_terms(celebration_terms, model_sg.wv)
+conflict_terms_sg = filter_terms(conflict_terms, model_sg.wv)
+
+# Check and filter for CBOW model
+print("CBOW model:")
+male_terms_cbow = filter_terms(past_terms, model_cbow.wv)
+female_terms_cbow = filter_terms(future_terms, model_cbow.wv)
+career_terms_cbow = filter_terms(celebration_terms, model_cbow.wv)
+family_terms_cbow = filter_terms(conflict_terms, model_cbow.wv)
+
+
+target_sets = ["past_terms", "future_terms"]
+attribute_sets = ["career_terms", "family_terms"]
+
+# Create a query for each model
+sg_query = Query(
+    [past_terms_sg, future_terms_sg],
+    [celebration_terms_sg, conflict_terms_sg],
+    target_sets,
+    attribute_sets,
+)
+
+cbow_query = Query(
+    [male_terms_cbow, female_terms_cbow],
+    [career_terms_cbow, family_terms_cbow],
+    target_sets,
+    attribute_sets,
+)
+
+# Original query for pre-trained models
+original_query = Query(
+    [past_terms, future_terms],
+    [celebration_terms, conflict_terms],
+    target_sets,
+    attribute_sets,
+)
+
+# Embedding models
+embedded_w2v = WordEmbeddingModel(wv_demo, "GloVe Model")
+embedded_glove = WordEmbeddingModel(pretrained_glove, "word2vec Model")
+
+# Create WEFE model wrappers
+wefe_sg = WordEmbeddingModel(model_sg.wv, "Skip-gram Model")
+wefe_cbow = WordEmbeddingModel(model_cbow.wv, "CBOW Model")
+wefe_glove = WordEmbeddingModel(pretrained_glove, "GloVe Model")
+wefe_w2v = WordEmbeddingModel(wv_demo, "Word2Vec Google News")
+
+# Run WEAT tests
+weat_metric = WEAT()
+
+print("\nRunning WEAT tests...")
+
+# Test Skip-gram
+print("\nSkip-gram Model:")
+if all(
+    [
+        len(past_terms_sg) > 0,
+        len(future_terms_sg) > 0,
+        len(celebration_terms_sg) > 0,
+        len(conflict_terms_sg) > 0,
+    ]
+):
+    wefe_result = weat_metric.run_query(sg_query, wefe_sg)
+    print(wefe_result)
+else:
+    print("Not enough terms in vocabulary for WEAT test")
+
+# Test CBOW
+print("\nCBOW Model:")
+if all(
+    [
+        len(male_terms_cbow) > 0,
+        len(female_terms_cbow) > 0,
+        len(career_terms_cbow) > 0,
+        len(family_terms_cbow) > 0,
+    ]
+):
+    wefe_result = weat_metric.run_query(cbow_query, wefe_cbow)
+    print(wefe_result)
+else:
+    print("Not enough terms in vocabulary for WEAT test")
+
+# Test pre-trained models
+print("\nGloVe Model:")
+wefe_result = weat_metric.run_query(original_query, wefe_glove)
+print(wefe_result)
+
+print("\nWord2Vec Google News Model:")
+wefe_result = weat_metric.run_query(original_query, wefe_w2v)
+print(wefe_result)
