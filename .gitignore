@@ -1,1 +1,3 @@
 __pycache__
+cbow_model.model
+skipgram_model.model
