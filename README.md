@@ -10,7 +10,7 @@ The objective of this project was to:
 
 - `vocab.txt`: Vocabulary used in the skip-gram model; included for reference.
 - `normalize_text_module.py`: Utility module for text preprocessing, including case folding and filtering.  
-  > Adapted from [my NormalizeText repo](https://github.com/scythemenace/NormalizeText) with modifications to make it a reusable module for processing any input file.
+  > Adapted from my [NormalizeText](https://github.com/scythemenace/NormalizeText) repo with modifications to make it a reusable module for processing any input file.
 - `normalize_text_sentence_module.py`: Similar to the above, but designed for sentence-level normalization.
 - `w_embeds.py`: Main script for training embeddings, querying vector spaces, running bias evaluation, and performing classification tasks.
 - `Report.pdf`: Fully documented report explaining methodology, experimental results, and observations.
